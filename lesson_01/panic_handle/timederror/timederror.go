@@ -7,19 +7,19 @@ import (
 
 // TimedError is struct for handling error with time
 type TimedError struct {
-	happenedAt time.Time
-	err        string
+	HappenedAt time.Time
+	Err        string
 }
 
 // Error with time
 func (t *TimedError) Error() string {
-	return t.happenedAt.String() + " - " + t.err
+	return t.HappenedAt.String() + " - " + t.Err
 }
 
 // New error with time will be created
 func New(err interface{}) error {
 	return &TimedError{
-		happenedAt: time.Now(),
-		err:        fmt.Sprintf("%v", err),
+		HappenedAt: time.Now(),
+		Err:        fmt.Sprintf("%v", err),
 	}
 }
