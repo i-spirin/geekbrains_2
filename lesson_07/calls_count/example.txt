@@ -1,0 +1,14 @@
+package main
+
+import "fmt"
+
+func main() {
+	go fmt.Println("123")
+	go fmt.Println("321")
+}
+
+func bla123() {
+    go fmt.Println("123")
+    fmt.Println("123")
+    go fmt.Println("321")
+}
