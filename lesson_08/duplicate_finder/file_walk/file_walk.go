@@ -24,13 +24,13 @@ func Search(rootPath string, wg *sync.WaitGroup, toCheck chan string) {
 	wg.Done()
 }
 
-func CheckFiles(toCheck <-chan string, wg *sync.WaitGroup, info *files_info.FilesHashInfo) {
+func CheckFiles(toCheck <-chan string, wg *sync.WaitGroup, info *files_info.FilesHashInfo, errorChannel chan<- error) {
 	log.Println("Starting checkFiles")
 	defer wg.Done()
 
 	for {
-		path := <-toCheck
-		if path == "" {
+		path, ok := <-toCheck
+		if !ok {
 			log.Println("checkFiles end")
 			return
 		}
@@ -38,11 +38,13 @@ func CheckFiles(toCheck <-chan string, wg *sync.WaitGroup, info *files_info.File
 		sum, err := FileMD5(path)
 		if err != nil {
 			log.Println("An error occured when reading file:", err)
+			errorChannel <- err
 		}
 
 		err = info.Add(path, sum)
 		if err != nil {
 			log.Printf("Error checking %s: %v", path, err)
+			errorChannel <- err
 		}
 	}
 }
