@@ -26,3 +26,12 @@ func (f *FilesHashInfo) Add(path string, hash string) error {
 	f.Files[hash] = path
 	return nil
 }
+
+func (f *FilesHashInfo) Get(hash string) (string, error) {
+	f.mu.RLock()
+	defer f.mu.RUnlock()
+	if path, isExists := f.Files[hash]; isExists {
+		return path, nil
+	}
+	return "", fmt.Errorf("%s not found", hash)
+}

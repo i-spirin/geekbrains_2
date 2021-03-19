@@ -28,12 +28,7 @@ func createTemp() (string, string) {
 }
 
 func TestSearch(t *testing.T) {
-	ch := make(chan string, 2)
-
 	tmpDirectory, tmpFile := createTemp()
-
-	wg := sync.WaitGroup{}
-	wg.Add(1)
 
 	err := os.Mkdir(tmpDirectory, 0755)
 	if err != nil {
@@ -50,17 +45,13 @@ func TestSearch(t *testing.T) {
 	}
 	defer file.Close()
 
-	go file_walk.Search(tmpDirectory, &wg, ch)
-	wg.Wait()
+	found := file_walk.Search(tmpDirectory)
 
-	foundFile := <-ch
-
-	if tmpFile != foundFile {
-		t.Errorf("Unexpected file found %s", foundFile)
+	if len(found) != 1 {
+		t.Error("Found more than 1 file")
 	}
-
-	if _, ok := <-ch; ok {
-		t.Errorf("Channel is not closed")
+	if found[0] != tmpFile {
+		t.Errorf("Unexpected found")
 	}
 
 }
@@ -121,8 +112,9 @@ func TestCheckFiles1(t *testing.T) {
 	wg.Add(1)
 	info := files_info.New()
 	errorChannel := make(chan error, 10)
+	duplicates := make(chan string)
 
-	go file_walk.CheckFiles(ch, &wg, &info, errorChannel)
+	go file_walk.CheckFiles(ch, &wg, &info, errorChannel, duplicates)
 	wg.Wait()
 	close(errorChannel)
 
@@ -137,12 +129,13 @@ func TestCheckFiles2(t *testing.T) {
 	wg.Add(1)
 	info := files_info.New()
 	errorChannel := make(chan error, 10)
+	duplicates := make(chan string)
 
 	ch := make(chan string, 1)
 	ch <- "/tmp/guess-this-is-unexisting-file"
 	close(ch)
 
-	go file_walk.CheckFiles(ch, &wg, &info, errorChannel)
+	go file_walk.CheckFiles(ch, &wg, &info, errorChannel, duplicates)
 	wg.Wait()
 
 	err := <-errorChannel
@@ -185,12 +178,22 @@ func TestCheckFiles3(t *testing.T) {
 	wg.Add(1)
 	info := files_info.New()
 	errorChannel := make(chan error, 10)
+	duplicates := make(chan string, 10)
 
-	go file_walk.CheckFiles(ch, &wg, &info, errorChannel)
+	go file_walk.CheckFiles(ch, &wg, &info, errorChannel, duplicates)
 	wg.Wait()
+	close(duplicates)
 
 	err = <-errorChannel
 	if err == nil {
 		t.Errorf("CheckFiles does not returned error when expected")
+	}
+
+	dup, ok := <-duplicates
+	if !ok {
+		t.Errorf("CheckFiles does not found any duplicate")
+	}
+	if dup != tmpFile && dup != tmpFile+"1" {
+		t.Errorf("CheckFiles found wrong duplicate: expected `%s' or `%s', got `%s'", tmpFile, tmpFile+"1", dup)
 	}
 }

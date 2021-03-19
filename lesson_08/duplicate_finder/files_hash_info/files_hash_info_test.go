@@ -21,3 +21,19 @@ func TestAdd(t *testing.T) {
 		t.Errorf("fi.Add does not returned error when expected")
 	}
 }
+
+func TestGet(t *testing.T) {
+	fi := files_info.New()
+
+	err := fi.Add("/tmp/123", "12345")
+	if err != nil {
+		t.Errorf("Got error for fi.Add")
+	}
+	path, err := fi.Get("12345")
+	if err != nil {
+		t.Errorf("Got error %v", err)
+	}
+	if path != "/tmp/123" {
+		t.Errorf("Got unexpected path")
+	}
+}
